@@ -1,0 +1,13 @@
+torch
+torchvision
+torchaudio
+opencv-python
+pycocotools
+matplotlib
+onnxruntime
+onnx
+flask
+Flask-Cors
+scipy
+loguru
+../sam2
