@@ -41,20 +41,16 @@ const App = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [annotationIsLoading, setAnnotationIsLoading] = useState(false);
 
-  const [showDepth, setShowDepth] = useState(false);
   const [showMask, setShowMask] = useState(false);
-  const [autoLoad, setAutoLoad] = useState(false);
 
   const [currentScene, setCurrentScene] = useState(null);
   const [image, setImage] = useState(null);
   const [maskImage, setMaskImage] = useState(null);
-  const [depthImage, setDepthImage] = useState(null);
 
   const [availableScenes, setAvailableScenes] = useState([]);
 
   const [rect, setRect] = useState(null);
   const [drawing, setDrawing] = useState(false);
-  const [outlierThreshold, setOutlierThreshold] = useState(null);
 
   const [positiveKeypoints, setPositiveKeypoints] = useState([]);
   const [negativeKeypoints, setNegativeKeypoints] = useState([]);
@@ -97,6 +93,11 @@ const App = () => {
     setAnnotationsFromResult(result, image);
   }, [image, currentScene]);
 
+
+  useEffect(() => {
+    updateAvailableScenes()
+  }, [])
+
   React.useEffect(() => {
     if (maskImage) {
       maskImageRef.current?.cache();
@@ -125,19 +126,12 @@ const App = () => {
       const scale = maxWidth / img.width;
       setImage({ img, scale });
     };
-
-    const depthImg = new window.Image();
-    depthImg.src = `http://127.0.0.1:5000/scenes/${sceneName}/depth`;
-    depthImg.crossOrigin = "Anonymous";
-    depthImg.onload = () => {
-      const scale = maxWidth / depthImg.width;
-      setDepthImage({ img: depthImg, scale });
-    };
   };
 
   const updateAvailableScenes = async () => {
     try {
       const loadAvailableScenes = await getAvailableScenes();
+      console.log("start load")
       setAvailableScenes(loadAvailableScenes);
     } catch (error) {
       console.error("Error fetching available files:", error);
@@ -159,39 +153,15 @@ const App = () => {
     setRect(null);
   };
 
-  const handleOutlierThresholdChange = (event) => {
-    const outlierThreshold = event.target.value;
-    setOutlierThreshold(outlierThreshold);
-  };
-
-  useEffect(() => {
-    let intervalId;
-
-    const startInterval = async () => {
-      intervalId = setInterval(async () => {
-        updateAvailableScenes();
-      }, 3000);
-    };
-
-    startInterval();
-
-    return () => {
-      if (intervalId) {
-        clearInterval(intervalId);
-      }
-    };
-  }, []);
-
   useEffect(() => {
     const sortedScenes = availableScenes.sort(
-      (a, b) => new Date(b.lastModifiedTime) - new Date(a.lastModifiedTime)
+      (a, b) => a.sceneName - b.sceneName
     );
 
     if (sortedScenes.length > 0) {
       const sceneToSet = sortedScenes[0];
       if (
-        !currentScene ||
-        (autoLoad && sceneToSet.sceneName !== currentScene.sceneName)
+        !currentScene
       ) {
         setCurrentScene(sceneToSet);
         setMaskImage(null);
@@ -209,7 +179,7 @@ const App = () => {
         updateImageSources(updatedScene.sceneName);
       }
     }
-  }, [availableScenes, currentScene, autoLoad]);
+  }, [availableScenes, currentScene]);
 
   const getAvailableScenes = async () => {
     try {
@@ -283,7 +253,6 @@ const App = () => {
           pos.x / image.scale,
           pos.y / image.scale,
         ]),
-        outlierThreshold: outlierThreshold ?? currentResult?.outlierThreshold,
         sceneName: currentScene?.sceneName,
       })
       .then((response) => {
@@ -314,9 +283,6 @@ const App = () => {
     })
   );
 
-  console.log("Current rect:", rect);
-  console.log("Current positive keypoints:", positiveKeypoints);
-  console.log("Current negative keypoints:", negativeKeypoints);
 
   return (
     <>
@@ -394,21 +360,6 @@ const App = () => {
               checked={showMask}
             />
             <div>Show Mask</div>
-            <Switch
-              onChange={() => setShowDepth(!showDepth)}
-              checked={showDepth}
-            />
-            <div>Show Depth</div>
-
-            {/*
-
-            A bit bug prone, needs more testing
-
-            <Switch
-              onChange={() => setAutoLoad(!autoLoad)}
-              checked={autoLoad}
-            />
-            <div>Auto select newest scene</div> */}
           </div>
         </div>
       </div>
@@ -454,24 +405,6 @@ const App = () => {
                 >
                   Segment
                 </button>
-                <div className="ml-4">
-                  <label
-                    htmlFor="outlierThreshold"
-                    className="block text-sm font-bold mb-1"
-                  >
-                    Depth outlier threshold (m2):
-                  </label>
-                  <input
-                    type="number"
-                    id="outlierThreshold"
-                    name="outlierThreshold"
-                    value={
-                      outlierThreshold ?? currentResult?.outlierThreshold ?? 0.1
-                    }
-                    onChange={handleOutlierThresholdChange}
-                    className="shadow appearance-none border rounded w-24 py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                  />
-                </div>
               </div>
               <p className="text-sm text-gray-600">
                 Hold mouse down while dragging to draw a rectangle.
@@ -486,20 +419,12 @@ const App = () => {
             height={image ? image.img.height * image.scale : 600}
           >
             <Layer>
-              {image && !showDepth && (
+              {image && (
                 <Image
                   image={image.img}
                   // onClick={handleImageClick}
                   scaleX={image.scale}
                   scaleY={image.scale}
-                />
-              )}
-              {depthImage && showDepth && (
-                <Image
-                  image={depthImage.img}
-                  // onClick={handleImageClick}
-                  scaleX={depthImage.scale}
-                  scaleY={depthImage.scale}
                 />
               )}
               {maskImage && showMask && (
