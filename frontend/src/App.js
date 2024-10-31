@@ -41,7 +41,7 @@ const App = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [annotationIsLoading, setAnnotationIsLoading] = useState(false);
 
-  const [showMask, setShowMask] = useState(false);
+  const [showMask, setShowMask] = useState(true);
 
   const [currentScene, setCurrentScene] = useState(null);
   const [image, setImage] = useState(null);
@@ -55,14 +55,13 @@ const App = () => {
   const [positiveKeypoints, setPositiveKeypoints] = useState([]);
   const [negativeKeypoints, setNegativeKeypoints] = useState([]);
 
-  const [annotationMode, setAnnotationMode] = useState("positive");
+  const [annotationMode, setAnnotationMode] = useState("box");
 
   const maskImageRef = React.useRef();
 
   const scale = image?.scale;
 
   const setAnnotationsFromResult = (result, image) => {
-
     if (!result || !image?.scale) return;
 
     setRect({
@@ -85,18 +84,16 @@ const App = () => {
         y: pos[1] * scale,
       }))
     );
-
-  }
+  };
 
   useEffect(() => {
     const result = currentScene?.result;
     setAnnotationsFromResult(result, image);
   }, [image, currentScene]);
 
-
   useEffect(() => {
-    updateAvailableScenes()
-  }, [])
+    updateAvailableScenes();
+  }, []);
 
   React.useEffect(() => {
     if (maskImage) {
@@ -105,7 +102,7 @@ const App = () => {
   }, [maskImage, showMask]);
 
   const updateImageSources = (sceneName) => {
-    const maxWidth = window.innerWidth * 0.8;
+    const maxWidth = window.innerWidth;
 
     try {
       const maskImg = new window.Image();
@@ -131,7 +128,7 @@ const App = () => {
   const updateAvailableScenes = async () => {
     try {
       const loadAvailableScenes = await getAvailableScenes();
-      console.log("start load")
+      console.log("start load");
       setAvailableScenes(loadAvailableScenes);
     } catch (error) {
       console.error("Error fetching available files:", error);
@@ -160,9 +157,7 @@ const App = () => {
 
     if (sortedScenes.length > 0) {
       const sceneToSet = sortedScenes[0];
-      if (
-        !currentScene
-      ) {
+      if (!currentScene) {
         setCurrentScene(sceneToSet);
         setMaskImage(null);
         updateImageSources(sceneToSet.sceneName);
@@ -283,7 +278,6 @@ const App = () => {
     })
   );
 
-
   return (
     <>
       <Modal
@@ -311,10 +305,43 @@ const App = () => {
       </Modal>
 
       <div className="flex items-center justify-between p-4 bg-gray-800 text-white font-sans">
-        <h1 className="text-4xl font-bold">👕👔🥼🦺🧥👘</h1>
+        <h1 className="text-4xl font-bold">SAM 2 Visualizer</h1>
 
         <div className="flex items-center justify-between space-x-4">
           <div className="flex items-center space-x-4">
+            <button
+              disabled={!rect}
+              onClick={annotate}
+              className={`font-bold py-2 px-4 rounded ${
+                rect
+                  ? "bg-blue-500 hover:bg-blue-700 text-white"
+                  : "bg-gray-500 text-gray-200 cursor-not-allowed"
+              }`}
+              title={
+                rect ? "" : "Draw a new rectangle to create a new segmentation"
+              }
+            >
+              Segment
+            </button>
+            <div className="flex items-center space-x-4">
+              <div>Show Mask</div>
+              <Switch
+                onChange={() => {
+                  setShowMask(!showMask);
+                }}
+                checked={showMask}
+              />
+            </div>
+            <div>Scene</div>
+            <Select
+              value={selectOptions.find(
+                (option) => option.value.sceneName === currentScene?.sceneName
+              )}
+              onChange={handleChange}
+              options={selectOptions}
+              placeholder="Select scene"
+              styles={customStyles}
+            />
             <div>Manual label mode</div>
             <Select
               value={annotationModeSelectOptions.find(
@@ -333,16 +360,6 @@ const App = () => {
             >
               Clear manual labels
             </button>
-            <div>Scene</div>
-            <Select
-              value={selectOptions.find(
-                (option) => option.value.sceneName === currentScene?.sceneName
-              )}
-              onChange={handleChange}
-              options={selectOptions}
-              placeholder="Select scene"
-              styles={customStyles}
-            />
 
             <button
               className="px-4 py-2 bg-blue-500 hover:bg-blue-700 text-white font-bold rounded"
@@ -351,66 +368,11 @@ const App = () => {
               Refresh
             </button>
           </div>
-
-          <div className="flex items-center space-x-4">
-            <Switch
-              onChange={() => {
-                setShowMask(!showMask);
-              }}
-              checked={showMask}
-            />
-            <div>Show Mask</div>
-          </div>
         </div>
       </div>
 
       {!!image && (
-        <div className="flex justify-between">
-          <div className="ml-5 mt-5">
-            <div className="mb-1">
-              <span className="font-bold">Scene: </span>
-              <span>{currentScene?.sceneName}</span>
-            </div>
-
-            {annotationIsLoading ? (
-              <div className="mt-3 flex items-center space-x-2">
-                <ClipLoader loading={true} size={30} />
-                <p className="text-sm font-bold text-blue-600">
-                  Manual segmentation in progress
-                </p>
-              </div>
-            ) : (
-              <>
-                <div className="mb-1">
-                  <span className="font-bold">Coverage: </span>
-                  <span>{currentResult?.coverage?.toFixed(3)} m</span>
-                </div>
-              </>
-            )}
-            <div className="flex flex-col items-start mt-4">
-              <div className="flex items-end mb-2">
-                <button
-                  disabled={!rect}
-                  onClick={annotate}
-                  className={`font-bold py-2 px-4 rounded ${
-                    rect
-                      ? "bg-blue-500 hover:bg-blue-700 text-white"
-                      : "bg-gray-500 text-gray-200 cursor-not-allowed"
-                  }`}
-                  title={
-                    rect
-                      ? ""
-                      : "Draw a new rectangle to create a new segmentation"
-                  }
-                >
-                  Segment
-                </button>
-              </div>
-              <p className="text-sm text-gray-600">
-                Hold mouse down while dragging to draw a rectangle.
-              </p>
-            </div>
-          </div>
+        <div >
           <Stage
             onMouseDown={handleMouseDown}
             onMouseMove={handleMouseMove}
@@ -422,14 +384,12 @@ const App = () => {
               {image && (
                 <Image
                   image={image.img}
-                  // onClick={handleImageClick}
                   scaleX={image.scale}
                   scaleY={image.scale}
                 />
               )}
               {maskImage && showMask && (
                 <Image
-                  // onClick={handleImageClick}
                   image={maskImage.img}
                   opacity={0.3}
                   scaleX={maskImage.scale}
