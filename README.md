@@ -47,7 +47,7 @@ In the interface, you can:
 First, create a Python environment (conda recommended).
 Then follow these steps:
 
-1. Install the [Segment-Anything](https://github.com/facebookresearch/segment-anything) repository as a submodule: `git submodule update --init --recursive`
+1. Install the [Segment-Anything 2 (SAM2)](https://github.com/facebookresearch/sam2) repository as a submodule: `git submodule update --init --recursive`
 
 2. Download the SAM2 model weights: `./download_sam_weights.sh`
 
