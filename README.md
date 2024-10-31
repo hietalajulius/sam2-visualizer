@@ -1,6 +1,7 @@
-![segment stretched shirt](https://i.imgur.com/lyoj63a.png)
+![Screenshot from 2024-10-31 06-25-44](https://github.com/user-attachments/assets/09432f40-6e00-4fff-bb94-76b7001faf9c)
 
-# Evaluation service 🏆
+
+# SAM 2 Visualizer 🏆
 The evaluation service will be used at live ICRA 2024 to calculate the participants scores using the result observations.
 The organizers will segment the stretched cloth from the image and calculate its coverage, which is the fraction of the maximum possible area that the cloth item could have covered.
 
